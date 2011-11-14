@@ -2,6 +2,12 @@
 #include <string.h>
 #include <stdlib.h>
 
+struct dim3{
+ int x,y,z;
+};
+
+typedef struct dim3 dim3;
+
 void convert(int thousands, int hundreds, int tens, int ones)
 {
 char *num[] = {"", "One", "Two", "Three", "Four", "Five", "Six",

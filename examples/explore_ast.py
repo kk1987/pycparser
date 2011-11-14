@@ -34,7 +34,12 @@ from pycparser import c_parser, c_ast
 # when parsing real, correct C code.
 #
 text = r"""
+
     typedef int Node, Hash;
+
+    typedef struct {
+        int x;
+    }mytype;
 
     void HashPrint(Hash* hash, void (*PrintFunc)(char*, char*))
     {
@@ -67,7 +72,7 @@ ast = parser.parse(text, filename='<none>')
 # created by pycparser. See the c_ast.py file for the options you
 # can pass it.
 #
-#~ ast.show()
+ast.show()
 
 # OK, we've seen that the top node is FileAST. This is always the
 # top node of the AST. Its children are "external declarations",

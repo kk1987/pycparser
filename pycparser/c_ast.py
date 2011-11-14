@@ -443,7 +443,51 @@ class FuncCall(Node):
 
     attr_names = ()
 
+class CU_FuncCall(Node):
+    def __init__(self, name, exconfig, args, coord=None):
+        self.name = name
+        self.exconfig = exconfig
+        self.args = args
+        self.coord = coord
+
+    def children(self):
+        nodelist = []
+        if self.name is not None: nodelist.append(("name", self.name))
+        if self.exconfig is not None: nodelist.append(("exconfig", self.exconfig))
+        if self.args is not None: nodelist.append(("args", self.args))
+        return tuple(nodelist)
+
+    attr_names = ()
+
+class CU_LaunchConfig(Node):
+    def __init__(self, configs, coord=None):
+        self.configs = configs
+        self.coord = coord
+
+    def children(self):
+        nodelist = []
+        if self.configs is not None:
+            for conf in self.configs:
+                nodelist.append(("config", conf))
+        return tuple(nodelist)
+
+    attr_names = ()
+
 class FuncDecl(Node):
+    def __init__(self, args, type, coord=None):
+        self.args = args
+        self.type = type
+        self.coord = coord
+
+    def children(self):
+        nodelist = []
+        if self.args is not None: nodelist.append(("args", self.args))
+        if self.type is not None: nodelist.append(("type", self.type))
+        return tuple(nodelist)
+
+    attr_names = ()
+
+class CU_FuncDecl(Node):
     def __init__(self, args, type, coord=None):
         self.args = args
         self.type = type
@@ -470,6 +514,22 @@ class FuncDef(Node):
         if self.body is not None: nodelist.append(("body", self.body))
         for i, child in enumerate(self.param_decls or []):
             nodelist.append(("param_decls[%d]" % i, child))
+        return tuple(nodelist)
+
+    attr_names = ()
+
+class CU_FuncDef(Node):
+    def __init__(self, decl, param_decls, body, coord=None):
+        self.decl = decl
+        self.param_decls = param_decls
+        self.body = body
+        self.coord = coord
+
+    def children(self):
+        nodelist = []
+        if self.decl is not None: nodelist.append(("decl", self.decl))
+        if self.body is not None: nodelist.append(("body", self.body))
+        if self.param_decls is not None: nodelist.extend(self.param_decls)
         return tuple(nodelist)
 
     attr_names = ()

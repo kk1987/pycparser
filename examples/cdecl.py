@@ -101,8 +101,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         c_decl  = sys.argv[1]
     else:
-        c_decl = "char *(*(**foo[][8])())[];"
-
+#        c_decl = "char *(*(**foo[][8])())[];"
+	c_decl = "typedef struct x{int a;}mytype;"
     print("Explaining the declaration: " + c_decl + "\n")
     print(explain_c_declaration(c_decl) + "\n") 
 

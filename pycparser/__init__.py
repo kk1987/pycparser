@@ -64,8 +64,10 @@ def parse_file( filename, use_cpp=False,
     else:
         text = open(filename, 'rU').read()
     
+    print text
+
     parser = CParser()
-    return parser.parse(text, filename)
+    return parser.parse(text, filename, debuglevel=0)
     
 
 if __name__ == "__main__":

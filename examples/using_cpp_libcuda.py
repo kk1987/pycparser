@@ -25,11 +25,10 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         filename  = sys.argv[1]
     else:
-        filename = 'c_files/mm.c'
+        filename = 'cuda_files/test.c'
 
     ast = parse_file(filename, use_cpp=True,
-            cpp_path=CPPPATH, 
-            cpp_args=r'-I../utils/fake_libc_include')
-    
-    ast.show()
+            cpp_path=CPPPATH,
+            cpp_args=[r'-I../utils/fake_libc_include',r'-I../utils/fake_libcuda_include'])
 
+    ast.show()

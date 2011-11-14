@@ -10,9 +10,9 @@ import re
 
 import ply.yacc
 
-from . import c_ast
-from .c_lexer import CLexer
-from .plyparser import PLYParser, Coord, ParseError
+import c_ast
+from c_lexer import CLexer
+from plyparser import PLYParser, Coord, ParseError
 
 
 class CParser(PLYParser):    
@@ -316,6 +316,32 @@ class CParser(PLYParser):
             body=body,
             coord=decl.coord)
 
+# modified by samson
+# CUDA function definition
+    def _build_cu_function_definition(self, decl, spec, param_decls, body):
+        """ Builds a function definition.
+        """
+        declaration = c_ast.Decl(
+            name=None,
+            quals=spec['qual'],
+            storage=spec['storage'],
+            funcspec=spec['function'],
+            type=decl,
+            init=None,
+            bitsize=None,
+            coord=decl.coord)
+
+        typename = spec['type']
+        declaration = self._fix_decl_name_type(declaration, typename)
+        return c_ast.CU_FuncDef(
+            decl=declaration,
+            param_decls=param_decls,
+            body=body,
+            coord=decl.coord)
+
+# modification done
+
+
     def _select_struct_union_class(self, token):
         """ Given a token (either STRUCT or UNION), selects the
             appropriate AST class.
@@ -416,6 +442,33 @@ class CParser(PLYParser):
             param_decls=p[3],
             body=p[4])
         
+# modified by samson
+# CUDA function definitions
+    def p_function_definition_3(self, p):
+        """ function_definition : cu_func_qualifier declarator declaration_list_opt compound_statement
+        """
+        # no declaration specifiers
+        spec = dict(qual=[], storage=[], type=[])
+
+        p[0] = self._build_cu_function_definition(
+            decl=p[2],
+            spec=spec,
+            param_decls=p[3],
+            body=p[4])
+
+    def p_function_definition_4(self, p):
+        """ function_definition : cu_func_qualifier declaration_specifiers declarator declaration_list_opt compound_statement
+        """
+        spec = p[2]
+
+        p[0] = self._build_cu_function_definition(
+            decl=p[3],
+            spec=spec,
+            param_decls=p[4],
+            body=p[5])
+
+# modification done
+
     def p_statement(self, p):
         """ statement   : labeled_statement
                         | expression_statement
@@ -587,8 +640,18 @@ class CParser(PLYParser):
         """ type_qualifier  : CONST
                             | RESTRICT
                             | VOLATILE
+                            | __HOST__
         """
         p[0] = p[1]
+
+# modified by samson
+# cuda function type qualifiers
+    def p_cu_func_qualifier(self, p):
+        """ cu_func_qualifier   : __GLOBAL__
+                                | __DEVICE__
+        """
+        p[0] = p[1]
+# modification done
     
     def p_init_declarator_list(self, p):
         """ init_declarator_list    : init_declarator
@@ -835,6 +898,21 @@ class CParser(PLYParser):
         
         p[0] = self._type_modify_decl(decl=p[1], modifier=func)
     
+# modified by samson
+# cuda function
+#    def p_direct_declarator_6(self, p):
+#        """ direct_declarator   : cu_func_qualifier direct_declarator LPAREN parameter_type_list RPAREN
+#                                | cu_func_qualifier direct_declarator LPAREN identifier_list_opt RPAREN
+#        """
+#        func = c_ast.CU_FuncDecl(
+#            args=p[4],
+#            type=None,
+#            coord=p[1].coord)
+
+#        p[0] = self._type_modify_decl(decl=p[2], modifier=func)
+
+# modification done
+
     def p_pointer(self, p):
         """ pointer : TIMES type_qualifier_list_opt
                     | TIMES type_qualifier_list_opt pointer
@@ -873,9 +951,10 @@ class CParser(PLYParser):
 
     def p_parameter_declaration_1(self, p):
         """ parameter_declaration   : declaration_specifiers declarator
+                                    | cu_func_qualifier declaration_specifiers declarator
         """
-        spec = p[1]
-        decl = p[2]
+        spec = p[1] if len(p)==3 else p[2]
+        decl = p[2] if len(p)==3 else p[3]
         
         decl = c_ast.Decl(
             name=None,
@@ -1052,6 +1131,28 @@ class CParser(PLYParser):
             type=c_ast.TypeDecl(None, None, None),
             coord=self._coord(p.lineno(1)))
     
+# modified by samson
+# CUDA function declaration
+#    def p_direct_abstract_declarator_8(self, p):
+#        """ direct_abstract_declarator  : cu_func_qualifier direct_abstract_declarator
+#        """
+#        func = c_ast.CU_FuncDecl(
+#            args=p[4],
+#            type=None,
+#            coord=p[1].coord)
+
+#        p[0] = self._type_modify_decl(decl=p[2], modifier=func)
+
+#    def p_direct_abstract_declarator_9(self, p):
+#        """ direct_abstract_declarator  : cu_func_qualifier direct_abstract_declarator
+#        """
+#        p[0] = c_ast.CU_FuncDecl(
+#            args=p[3],
+#            type=c_ast.TypeDecl(None, None, None),
+#            coord=self._coord(p.lineno(1)))
+
+# modification done
+
     # declaration is a list, statement isn't. To make it consistent, block_item
     # will always be a list
     #
@@ -1296,6 +1397,21 @@ class CParser(PLYParser):
         """
         p[0] = c_ast.CompoundLiteral(p[2], p[5])
 
+# modified by samson
+# parse device function call
+    def p_postfix_expression_7(self, p):
+        """ postfix_expression  : postfix_expression cuda_launch_config LPAREN argument_expression_list RPAREN
+                                | postfix_expression cuda_launch_config LPAREN RPAREN
+        """
+        p[0] = c_ast.CU_FuncCall(p[1], p[2], p[4] if len(p) == 6 else None, p[1].coord)
+
+    def p_cuda_launch_config(self, p):
+        """ cuda_launch_config  : LECONFIG argument_expression_list RECONFIG
+        """
+        p[0] = c_ast.CU_LaunchConfig([p[2]])
+
+# modification done
+
     def p_primary_expression_1(self, p):
         """ primary_expression  : identifier """
         p[0] = p[1]
@@ -1406,10 +1522,18 @@ if __name__ == "__main__":
     
     t1 = time.time()
     parser = CParser(lex_optimize=True, yacc_debug=True, yacc_optimize=False)
-    sys.write(time.time() - t1)
+    print (time.time() - t1)
     
     buf = ''' 
-        int (*k)(int);
+        __device__ void xx(int a);
+        __global__ void mm(int * a)
+        {
+                int i;
+                for(i=0; i<10; i++)
+                {
+                        a[i]+=i;
+                }
+        }
     '''
     
     # set debuglevel to 2 for debugging

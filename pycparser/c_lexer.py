@@ -96,7 +96,7 @@ class CLexer(object):
         'FLOAT', 'FOR', 'GOTO', 'IF', 'INLINE', 'INT', 'LONG', 'REGISTER',
         'RESTRICT', 'RETURN', 'SHORT', 'SIGNED', 'SIZEOF', 'STATIC', 'STRUCT',
         'SWITCH', 'TYPEDEF', 'UNION', 'UNSIGNED', 'VOID',
-        'VOLATILE', 'WHILE',
+        'VOLATILE', 'WHILE', '__GLOBAL__', '__DEVICE__', '__HOST__',
     )
 
     keyword_map = {}
@@ -160,6 +160,10 @@ class CLexer(object):
         
         # pre-processor 
         'PPHASH',      # '#'
+
+        # Execution Configuration
+        'LECONFIG',     # <<<
+        'RECONFIG',     # >>>
     )
 
     ##
@@ -340,6 +344,10 @@ class CLexer(object):
 
     t_STRING_LITERAL    = string_literal
     
+    # Execution configuration
+    t_LECONFIG          = r'<<<'
+    t_RECONFIG          = r'>>>'
+
     # The following floating and integer constants are defined as 
     # functions to impose a strict order (otherwise, decimal
     # is placed before the others because its regex is longer,
@@ -413,17 +421,18 @@ class CLexer(object):
 
 
 if __name__ == "__main__":
-    filename = '../zp.c'
+    filename = '../examples/cuda_files/mm.cu'
+#    filename = '../zp.c'
     text = open(filename).read()
     
     #~ text = '"'+r"""ka \p ka"""+'"'
-    text = r"""
-    546
-        #line 66 "kwas\df.h" 
-        id 4
-        # 5 
-        dsf
-    """
+#    text = r"""
+#    546
+#        #line 66 "kwas\df.h"
+#        id 4
+#        # 5
+#        dsf
+#    """
     
     def errfoo(msg, a, b):
         sys.write(msg + "\n")
@@ -441,7 +450,7 @@ if __name__ == "__main__":
         if not tok: break
             
         #~ print type(tok)
-        printme([tok.value, tok.type, tok.lineno, clex.filename, tok.lexpos])
+        print([tok.value, tok.type, tok.lineno, clex.filename, tok.lexpos])
         
         
 
